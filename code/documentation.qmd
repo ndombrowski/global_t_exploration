@@ -1,0 +1,9 @@
+# Documentation for global temperature data vis
+
+
+## Data recovery
+
+Data was retrieved from:  [NASA GISS](https://data.giss.nasa.gov): Datasets --> GISTEMP surface temperature --> Global-mean monthly, seasonal, and annual means, 1880-present, updated through most recent month.
+
+The table accessible via this [link](https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv) and moved into the `data` folder on November 14th, 2022.
+
