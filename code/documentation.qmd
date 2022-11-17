@@ -1,9 +1,160 @@
 # Documentation for global temperature data vis
 
+## Statement of purpose
 
-## Data recovery
+Here, we want to explore global temperature fluctuations from 1880 to present to look at:
 
-Data was retrieved from:  [NASA GISS](https://data.giss.nasa.gov): Datasets --> GISTEMP surface temperature --> Global-mean monthly, seasonal, and annual means, 1880-present, updated through most recent month.
+- global trends
+- seasonal trends
+
+
+## Data sources
+
+The GISS Surface Temperature Analysis ver. 4 (GISTEMP v4) is an estimate of global surface temperature change and relevant data was retrieved from: [NASA GISS](https://data.giss.nasa.gov): Datasets --> GISTEMP surface temperature --> Global-mean monthly, seasonal, and annual means, 1880-present, updated through most recent month.
 
 The table accessible via this [link](https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv) and moved into the `data` folder on November 14th, 2022.
 
+
+## Data analysis
+
+### Used libraries
+
+```{r}
+library(tidyverse)
+library(scales)
+library(glue)
+```
+
+
+### Read in Data
+
+Since column names start in second row, we need to skip the first line, when reading in the data. NAs are indicated by `***`
+
+```{r}
+#read in table 
+temp_data <- read.csv("../data/GLB.Ts+dSST.csv", skip = 1, na = "***")
+
+#view table
+head(temp_data)
+```
+
+Initial observations:
+
+- The data is in long data and includes both monthly data, as well as averages for intervals, such as January to December. To simplify this, we want to only keep relevant columns and store them in long format.
+
+
+### Data cleaning
+
+```{r}
+#select only yearly averages and rename columns in a more consistent manner
+JD_data <- temp_data |> 
+    #select relevant columns
+    select(year = Year, t_diff = J.D) |> 
+    #drop nas
+    drop_na()
+
+head(JD_data)
+dim(JD_data)
+```
+
+```{r}
+#view structure
+glimpse(JD_data)
+```
+
+```{r}
+#extract dates
+annotation <- JD_data |> 
+    arrange(year) |> 
+    slice(1, n()) |> 
+    mutate(t_diff = 0,
+           x = year + c(-5, 5))
+
+head(annotation)
+```
+
+```{r}
+#get max temp difference
+max_t_diff <- format(round(max(JD_data$t_diff),1), nsmall = 1)
+max_t_diff
+```
+
+
+
+### Data visualization
+
+#### Line plot
+
+```{r}
+ggplot(JD_data, aes(year, t_diff)) +
+    geom_line(aes(color = "1"), size = 0.5) +
+    geom_point(aes(color = "1"), fill = "white", shape = 21, show.legend = FALSE) +
+    geom_smooth(aes(color = "2"), size = 0.75, span = 0.15) +
+    geom_hline(yintercept = 0, size = 0.2, linetype = "dashed") +
+    #define plot boundaries
+    scale_x_continuous(breaks=seq(1880, 2023, 20), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-0.5, 1.5), expand = c(0,0)) +
+    #change colors for legend
+    theme_bw() + 
+    scale_color_manual(name = NULL, 
+                       breaks = c(1,2), 
+                       values = c("gray", "darkred"),
+                       labels = c("Annual Mean", "Lowess smoothing")) +
+    #remove grey box in legend
+    guides(color=guide_legend(override.aes=list(fill=NA))) +
+    theme(
+        #axis.ticks = element_blank(),
+        panel.grid = element_blank(), 
+        legend.position = c(0.12, 0.92), 
+        legend.title = element_text(size = 0), 
+        legend.key.height = unit(14, "pt"),
+        legend.margin = margin(0,0,0,0)
+        ) +
+    labs(title = "Global Mean Estimates based on Land-Ocean data", 
+         caption = "Data source: NASA/GISS/GISTEMP v4",
+         x = "Year", y = "Temperature anomaly (C)")
+```
+
+```{r}
+ggsave("../figures/temperature_line_graph.pdf", width = 7, height = 4)
+```
+
+
+#### Bargraphs
+
+```{r}
+ggplot(JD_data, aes(x = year, y= t_diff, fill = t_diff)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(data = annotation, aes(x = x, label = year), color = "white") +
+    annotate("text", x = 1880, y = 1, size = 4, hjust = 0, 
+              label = glue("Global temperatures have increased by over {max_t_diff} \u00B0C since {min(JD_data$year)}"), 
+              color = "white") + 
+    #scale_fill_gradient2(low = "darkblue", mid = "white", high = "darkred",
+    #                    midpoint = 0, limits = c(-0.5, 1.5) ) +
+    #scale_fill_gradientn(colors = c("darkblue", "white", "darkred"),
+    #                     values = rescale(c(min(JD_data$t_diff), 0, max(JD_data$t_diff))),
+    #                     limits = c(min(JD_data$t_diff), max(JD_data$t_diff))) +
+    scale_fill_stepsn(colors = c("darkblue", "white", "darkred"),
+                       values = rescale(c(min(JD_data$t_diff), 0, max(JD_data$t_diff))),
+                       limits = c(min(JD_data$t_diff), max(JD_data$t_diff)),
+                       n.breaks = 9) +
+    theme_void() + 
+    theme(
+        plot.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white", size = 8)
+    )
+```
+
+```{r}
+ggsave("../figures/temperature_columns.pdf", width = 7, height = 4)
+```
+
+
+
+## Summary of analysis
+
+- Global temperatures have increased since the 1880s by 1.0C, this increase was almost linear since 1980.
+
+
+
+## Supporting visualizations and key findings

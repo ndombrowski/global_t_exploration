@@ -8,14 +8,14 @@ book:
   author: "Nina Dombrowski"
   chapters:
     - index.qmd
-    - code/1_notes.qmd
+    - code/documentation.qmd
 
 format:
   html:
     theme: cosmo
     code-overflow: wrap
-    fig-width: 5.5
-    fig-height: 4.5
+    fig-width: 6.5
+    fig-height: 5.5
   pdf:
     documentclass: scrreprt
     pdf-engine: pdflatex
